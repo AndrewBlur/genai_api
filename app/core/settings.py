@@ -16,3 +16,8 @@ class JWTSettings(BaseSettings):
     TIME_TO_EXPIRE:int
     SECRET_KEY:str
 
+class LLMSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file="../../.env")
+
+    GROQ_API_KEY:str
+    CHAT_COMPLETION_URL:str
