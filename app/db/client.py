@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+
 from app.core.settings import DBSettings
 
 db_settings = DBSettings()

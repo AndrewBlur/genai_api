@@ -1,7 +1,6 @@
 from fastapi import FastAPI,Depends
 from app.routes.auth import router as auth_router
 from app.routes.chat import router as chat_router
-from app.dependencies.auth import get_current_user
 
 app = FastAPI(tags=["Home"])
 

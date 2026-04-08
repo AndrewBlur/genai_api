@@ -1,8 +1,11 @@
-from app.db.collections import users_collection,chats_collection
 from fastapi import HTTPException,status
+
+from typing import List
+
+from app.db.collections import users_collection,chats_collection
 from app.core.security import hashpwd
 from app.models.chats import Chat
-from typing import List
+
 
 def create_user(username:str,pwd:str):
     user = get_user(username)

@@ -1,9 +1,13 @@
-import bcrypt
-from datetime import datetime,timedelta
-from jose import jwt,JWTError
-from app.core.settings import JWTSettings
 from fastapi import HTTPException,status
 from fastapi.security import OAuth2PasswordBearer
+
+import bcrypt
+from jose import jwt,JWTError
+
+from datetime import datetime,timedelta
+
+from app.core.settings import JWTSettings
+
 
 jwt_settings = JWTSettings()
 

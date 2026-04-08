@@ -1,8 +1,10 @@
 from fastapi import APIRouter,HTTPException,Depends
+from fastapi.security import OAuth2PasswordRequestForm
+
 from app.models.users import UserCreate
 from app.services.dbservices import create_user
 from app.services.authservices import login_user
-from fastapi.security import OAuth2PasswordRequestForm
+
 
 router = APIRouter(tags=["auth"])
 
