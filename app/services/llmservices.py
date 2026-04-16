@@ -2,24 +2,26 @@ from fastapi import HTTPException,status
 
 import json
 from uuid import uuid4
+from typing import Optional
 
 from app.models.chats import ChatResponse
 from app.utils.groq import call_groq
-from app.utils.tools import get_time,search
+from app.utils.tools import get_time,search,rag
 from app.services.dbservices import get_chat,update_chat_history,create_chat,update_chat_tokens
 
 ## all tools
-available_tools = {"get_time":get_time, "search":search}
+available_tools = {"get_time":get_time, "search":search, "rag":rag}
 
-def execute_tool_call(tool_call):
+def execute_tool_call(tool_call,user_id:Optional[str]):
     function_name = tool_call["function"]["name"]
     function_to_call = available_tools[function_name]
     function_args = json.loads(tool_call["function"]["arguments"])
-
+    if function_name == "rag":
+        function_args["user_id"] = user_id
     return function_to_call(**function_args)
 
 
-def chat_with_llm(model_name:str,message:str,chat_id:str)->ChatResponse:
+def chat_with_llm(model_name:str,message:str,chat_id:str,user_id:str)->ChatResponse:
     messages = [] ## buffer
     if chat_id:
     ## restore the message of the chatid
@@ -51,7 +53,7 @@ def chat_with_llm(model_name:str,message:str,chat_id:str)->ChatResponse:
     while "tool_calls" in assistant_message:
         for tool_call in assistant_message["tool_calls"]:
             tool_id = tool_call["id"]
-            tool_answer = execute_tool_call(tool_call)
+            tool_answer = execute_tool_call(tool_call,user_id)
             tool_message = {
                 "role":"tool",
                 "tool_call_id":tool_id,
@@ -73,3 +75,4 @@ def chat_with_llm(model_name:str,message:str,chat_id:str)->ChatResponse:
     update_chat_tokens(chat_id,total_tokens_used)
 
     return assistant_message
+

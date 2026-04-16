@@ -12,3 +12,6 @@ class ChatResponse(BaseModel):
 class Chat(BaseModel):
     role:str
     content:str
+
+class Query(BaseModel):
+    query:str
