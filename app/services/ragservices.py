@@ -3,7 +3,10 @@ from fastapi import HTTPException,status,File,Depends
 from typing import List
 import os
 
+import nomic
 from nomic import embed
+
+nomic.login(os.environ["NOMIC_API_KEY"])
 
 from datetime import timezone,timedelta,datetime
 

@@ -69,8 +69,8 @@ def get_user(username:str):
     return { "id" : str(user["_id"]), "username" : user["username"] , "password" : user["password"]}
 
 ## Chats Collection operations 
-def create_chat(chat_id:str,messages:List[Chat],tokens:int):
-    chats_collection.insert_one({"chat_id":chat_id,"chat_history":messages,"tokens":tokens})
+def create_chat(user_id:str,chat_id:str,messages:List[Chat],tokens:int):
+    chats_collection.insert_one({"user_id":user_id,"chat_id":chat_id,"chat_history":messages,"tokens":tokens})
 
 
 def get_chat(chat_id:str):
@@ -78,6 +78,14 @@ def get_chat(chat_id:str):
     if not chat:
         return None
     return {"chat_id":chat["chat_id"],"chat_history":chat["chat_history"],"tokens":chat["tokens"]}
+
+def get_user_chats(user_id:str):
+    chats = chats_collection.find({"user_id":user_id},{"chat_id":1,"chat_history":1,"_id":0})
+    result = []
+    for chat in chats:
+        title = chat["chat_history"][0]["content"][:50] if chat["chat_history"] else "New Chat"
+        result.append({"chat_id":chat["chat_id"],"title":title})
+    return result
 
 
 def update_chat_history(chat_id:str,message:Chat):

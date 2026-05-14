@@ -2,6 +2,7 @@ from fastapi import APIRouter,Depends,HTTPException,Form,File,UploadFile,status
 from app.dependencies.auth import get_current_user
 from app.models.chats import ChatRequest,Query
 from app.models.users import User
+from app.services.dbservices import get_user_chats
 from app.services.llmservices import chat_with_llm
 from app.services.ragservices import store_in_knowledgestore,retrieve_from_knowledgestore
 from typing import Annotated,List
@@ -21,6 +22,11 @@ def chat(query:ChatRequest,user = Depends(get_current_user)):
         return response
     except HTTPException:
         raise
+
+@router.get("/chats")
+def user_chats(user = Depends(get_current_user)):
+    chats = get_user_chats(user["id"])
+    return chats
 
 @router.post("/store")
 async def store(            

@@ -1,3 +1,6 @@
+from asyncio import protocols
+from app.models import users
+from app.models import chats
 from fastapi import HTTPException,status
 
 import json
@@ -40,11 +43,12 @@ def chat_with_llm(model_name:str,message:str,chat_id:str,user_id:str)->ChatRespo
         user_message = {"role":"user","content":message}
 
         messages.append(user_message)
-        create_chat(chat_id,messages,0)        
+        create_chat(user_id,chat_id,messages,0)        
     
     
     response = call_groq(messages,model_name)
 
+    print(response)
     assistant_message = response["choices"][0]["message"]
 
     messages.append(assistant_message)
@@ -65,7 +69,8 @@ def chat_with_llm(model_name:str,message:str,chat_id:str,user_id:str)->ChatRespo
             update_chat_history(chat_id,tool_message)
 
         response = call_groq(messages,model_name)
-
+        print(response)
+        
         assistant_message = response["choices"][0]["message"]
         
         messages.append(assistant_message)
@@ -74,5 +79,5 @@ def chat_with_llm(model_name:str,message:str,chat_id:str,user_id:str)->ChatRespo
     total_tokens_used = response["usage"]["total_tokens"]
     update_chat_tokens(chat_id,total_tokens_used)
 
-    return assistant_message
+    return {"message":assistant_message,"chat_id":chat_id,"role":"ai"}
 
