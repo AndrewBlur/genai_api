@@ -84,6 +84,16 @@ export async function getChats() {
   return request('/chats');
 }
 
+export async function getChat(chatId) {
+  return request(`/chats/${chatId}`);
+}
+
+export async function deleteChat(chatId) {
+  return request(`/chats/${chatId}`, {
+    method: 'DELETE'
+  });
+}
+
 export async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);

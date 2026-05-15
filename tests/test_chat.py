@@ -235,6 +235,79 @@ class TestUserChats:
         assert resp.json() == []
 
 
+class TestGetChat:
+    def test_get_chat_requires_auth(self, client):
+        resp = client.get("/chats/some-id")
+        assert resp.status_code == 401
+
+    def test_get_chat_success(self, client, auth_header):
+        mock_chat = {"chat_id": "chat-1", "chat_history": [], "tokens": 0}
+        with (
+            patch("app.routes.chat.get_chat", return_value=mock_chat),
+            patch("app.dependencies.auth.get_user") as mock_get_user,
+        ):
+            mock_get_user.return_value = {
+                "id": "abc123",
+                "username": "testuser",
+                "password": hashpwd("testpass"),
+            }
+            resp = client.get("/chats/chat-1", headers=auth_header)
+
+        assert resp.status_code == 200
+        assert resp.json()["chat_id"] == "chat-1"
+
+    def test_get_chat_not_found(self, client, auth_header):
+        with (
+            patch("app.routes.chat.get_chat", return_value=None),
+            patch("app.dependencies.auth.get_user") as mock_get_user,
+        ):
+            mock_get_user.return_value = {
+                "id": "abc123",
+                "username": "testuser",
+                "password": hashpwd("testpass"),
+            }
+            resp = client.get("/chats/non-existent", headers=auth_header)
+
+        assert resp.status_code == 404
+        assert "not found" in resp.json()["detail"].lower()
+
+
+class TestDeleteChat:
+    def test_delete_chat_requires_auth(self, client):
+        resp = client.delete("/chats/some-id")
+        assert resp.status_code == 401
+
+    def test_delete_chat_success(self, client, auth_header):
+        with (
+            patch("app.routes.chat.delete_chat", return_value=True),
+            patch("app.dependencies.auth.get_user") as mock_get_user,
+        ):
+            mock_get_user.return_value = {
+                "id": "abc123",
+                "username": "testuser",
+                "password": hashpwd("testpass"),
+            }
+            resp = client.delete("/chats/chat-1", headers=auth_header)
+
+        assert resp.status_code == 200
+        assert "deleted" in resp.json()["message"].lower()
+
+    def test_delete_chat_not_found(self, client, auth_header):
+        with (
+            patch("app.routes.chat.delete_chat", return_value=False),
+            patch("app.dependencies.auth.get_user") as mock_get_user,
+        ):
+            mock_get_user.return_value = {
+                "id": "abc123",
+                "username": "testuser",
+                "password": hashpwd("testpass"),
+            }
+            resp = client.delete("/chats/non-existent", headers=auth_header)
+
+        assert resp.status_code == 404
+        assert "not found" in resp.json()["detail"].lower()
+
+
 class TestStoreEndpoint:
     def test_store_requires_auth(self, client):
         resp = client.post("/store", files={"file": ("test.txt", b"content")})

@@ -2,7 +2,7 @@ from fastapi import APIRouter,Depends,HTTPException,Form,File,UploadFile,status
 from app.dependencies.auth import get_current_user
 from app.models.chats import ChatRequest,Query
 from app.models.users import User
-from app.services.dbservices import get_user_chats
+from app.services.dbservices import get_user_chats, get_chat, delete_chat
 from app.services.llmservices import chat_with_llm
 from app.services.ragservices import store_in_knowledgestore,retrieve_from_knowledgestore
 from typing import Annotated,List
@@ -27,6 +27,20 @@ def chat(query:ChatRequest,user = Depends(get_current_user)):
 def user_chats(user = Depends(get_current_user)):
     chats = get_user_chats(user["id"])
     return chats
+
+@router.get("/chats/{chat_id}")
+def user_chat(chat_id: str, user = Depends(get_current_user)):
+    chat = get_chat(chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    return chat
+
+@router.delete("/chats/{chat_id}")
+def remove_chat(chat_id: str, user = Depends(get_current_user)):
+    success = delete_chat(chat_id, user["id"])
+    if not success:
+        raise HTTPException(status_code=404, detail="Chat not found or not authorized")
+    return {"message": "Chat deleted successfully"}
 
 @router.post("/store")
 async def store(            

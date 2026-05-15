@@ -1,5 +1,5 @@
 // Chat page renderer
-import { sendMessage, getChats, uploadFile, clearToken, getUsername } from './api.js';
+import { sendMessage, getChats, getChat, deleteChat, uploadFile, clearToken, getUsername } from './api.js';
 
 const MODELS = [
   { id: 'qwen/qwen3-32b', name: 'Qwen 3 32B' },
@@ -135,18 +135,46 @@ function renderChatList() {
   list.innerHTML = `<div class="chat-list-label">Recent</div>` +
     chatHistory.map(c => `
       <div class="chat-item ${c.chat_id === currentChatId ? 'active' : ''}" data-id="${c.chat_id}">
-        💬 ${escapeHtml(c.title)}
+        <span class="chat-title">💬 ${escapeHtml(c.title)}</span>
+        <button class="delete-chat-btn" data-id="${c.chat_id}" title="Delete chat">🗑️</button>
       </div>
     `).join('');
 
   list.querySelectorAll('.chat-item').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', async (e) => {
+      if (e.target.closest('.delete-chat-btn')) return;
       currentChatId = el.dataset.id;
       messages = [];
       renderMessages();
       highlightActiveChat();
-      // Show a placeholder since we don't fetch full history from backend
-      showWelcomeForExisting();
+      
+      try {
+        const chatData = await getChat(currentChatId);
+        messages = chatData.chat_history || [];
+        renderMessages();
+      } catch (e) {
+        console.error('Failed to load chat history:', e);
+        showWelcomeForExisting();
+      }
+    });
+  });
+
+  list.querySelectorAll('.delete-chat-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!confirm("Are you sure you want to delete this chat?")) return;
+      try {
+        await deleteChat(id);
+        chatHistory = chatHistory.filter(c => c.chat_id !== id);
+        if (currentChatId === id) {
+          startNewChat();
+        } else {
+          renderChatList();
+        }
+      } catch (err) {
+        showToast('Failed to delete chat', 'error');
+      }
     });
   });
 }
@@ -194,7 +222,9 @@ function renderMessages() {
     return;
   }
 
-  inner.innerHTML = messages.map(m => `
+  const visibleMessages = messages.filter(m => m.role === 'user' || (m.role === 'assistant' && m.content));
+  
+  inner.innerHTML = visibleMessages.map(m => `
     <div class="message ${m.role}">
       <div class="avatar">${m.role === 'user' ? '👤' : '⚡'}</div>
       <div class="content">
