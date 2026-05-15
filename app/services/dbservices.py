@@ -27,21 +27,30 @@ def startDB():
 
     ## Create all index
     import time
-    try:
-        result = knowledgestore_collection.create_search_index(model=search_index_model)
-        print(f"Search Index creation request submitted: {result}")
-        
-        # 5. Optional: Wait for the index to be ready
-        print("Waiting for Search index to build...")
-        while True:
-            indices = list(knowledgestore_collection.list_search_indexes(name="vector-index"))
-            if indices and indices[0].get("queryable"):
-                print("Index is now queryable!")
-                break
-            time.sleep(2)
+    
+    max_retries = 10
+    retry_delay = 5
+    for attempt in range(max_retries):
+        try:
+            result = knowledgestore_collection.create_search_index(model=search_index_model)
+            print(f"Search Index creation request submitted: {result}")
             
-    except Exception as e:
-        print(f"Error creating Search index: {e}")
+            # Wait for the index to be ready
+            print("Waiting for Search index to build...")
+            while True:
+                indices = list(knowledgestore_collection.list_search_indexes(name="vector-index"))
+                if indices and indices[0].get("queryable"):
+                    print("Index is now queryable!")
+                    break
+                time.sleep(2)
+            break # Success, break out of retry loop
+        except Exception as e:
+            if "Error connecting to Search Index Management service" in str(e) and attempt < max_retries - 1:
+                print(f"Search service not ready yet. Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                time.sleep(retry_delay)
+            else:
+                print(f"Error creating Search index: {e}")
+                break
     
     ## Creating TTL index
     print("Creating TTL Index")
@@ -98,4 +107,8 @@ def update_chat_tokens(chat_id:str,tokens:int):
     filter_query = {"chat_id":chat_id}
     update_operation = {"$set":{"tokens":tokens}}
     chats_collection.update_one(filter_query,update_operation)
+
+def delete_chat(chat_id: str, user_id: str):
+    result = chats_collection.delete_one({"chat_id": chat_id, "user_id": user_id})
+    return result.deleted_count > 0
 
